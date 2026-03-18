@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversational Document and Video Chatbot</title>
+    <style>
+        @keyframes levitateGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        body {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96c93d, #ffcc5c);
+            background-size: 400% 400%;
+            animation: levitateGradient 15s ease infinite;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.1);
+            z-index: 0;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            position: relative;
+            z-index: 1;
+        }
+        .chat-header {
+            color: #2c3e50;
+            font-size: 28px;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 25px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            scrollbar-width: thin;
+            scrollbar-color: #45b7d1 #f0f0f0;
+        }
+        .chat-history::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-history::-webkit-scrollbar-track {
+            background: #f0f0f0;
+        }
+        .chat-history::-webkit-scrollbar-thumb {
+            background: #45b7d1;
+            border-radius: 4px;
+        }
+        .message {
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+            font-size: 16px;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .user-message {
+            background: #e1ffc7;
+            align-self: flex-end;
+        }
+        .bot-message {
+            background: #f0f0f0;
+            align-self: flex-start;
+        }
+        .loading-message {
+            background: #f0f0f0;
+            align-self: flex-start;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            margin-bottom: 20px;
+        }
+        .loader {
+            border: 4px solid #ddd;
+            border-top: 4px solid #45b7d1;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        .message img, .message video {
+            max-width: 100%;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
+        }
+        .message-text {
+            font-weight: 500;
+        }
+        .input-area {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .input-area input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        .input-area input[type="text"]:focus {
+            border-color: #45b7d1;
+        }
+        .input-area button {
+            padding: 12px 20px;
+            background: linear-gradient(90deg, #ff6b6b, #45b7d1);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .input-area button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .input-area input[type="file"] {
+            display: none;
+        }
+        .input-area label {
+            padding: 12px 20px;
+            background: linear-gradient(90deg, #ff6b6b, #45b7d1);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .input-area label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1 class="chat-header">Conversational Document and Video Chatbot</h1>
+        <div class="chat-history">
+            <!-- Messages will be appended here -->
+        </div>
+        <div class="input-area">
+            <input type="file" id="imageFile" name="imageFile" accept=".jpg,.jpeg,.png" style="display: none;">
+            <label for="imageFile">Images 📷</label>
+            <input type="file" id="documentFile" name="documentFile" accept=".pdf,.docx,.csv,.xlsx" style="display: none;">
+            <label for="documentFile">Documents 📄</label>
+            <input type="file" id="videoFile" name="videoFile" accept=".mp4" style="display: none;">
+            <label for="videoFile">Videos 🎥</label>
+            <input type="text" id="query" placeholder="Type your message...">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+    <script>
+        document.getElementById('send-btn').addEventListener('click', sendMessage);
+        document.getElementById('query').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        function showLoadingIndicator() {
+            const chatHistory = document.querySelector('.chat-history');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading-message';
+            loadingDiv.id = 'loading-indicator';
+            loadingDiv.innerHTML = `
+                <div class="loader"></div>
+                <span>Processing...</span>
+            `;
+            chatHistory.appendChild(loadingDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            return loadingDiv;
+        }
+
+        function hideLoadingIndicator() {
+            const loadingDiv = document.getElementById('loading-indicator');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        function sendMessage() {
+            const query = document.getElementById('query').value.trim();
+            if (!query) return;
+
+            const imageFileInput = document.getElementById('imageFile');
+            const documentFileInput = document.getElementById('documentFile');
+            const videoFileInput = document.getElementById('videoFile');
+
+            let selectedFile = null;
+            let fileType = null;
+            if (imageFileInput.files[0]) {
+                selectedFile = imageFileInput.files[0];
+                fileType = 'image';
+            } else if (documentFileInput.files[0]) {
+                selectedFile = documentFileInput.files[0];
+                fileType = 'document';
+            } else if (videoFileInput.files[0]) {
+                selectedFile = videoFileInput.files[0];
+                fileType = 'video';
+            }
+
+            const formData = new FormData();
+            formData.append('query', query);
+            if (selectedFile) {
+                formData.append('file', selectedFile);
+            }
+
+            if (selectedFile) {
+                const file = selectedFile;
+                const fileMimeType = file.type;
+                if (fileType === 'image') {
+                    appendMessage('user', query, URL.createObjectURL(file), 'image');
+                } else if (fileType === 'video') {
+                    appendMessage('user', query, URL.createObjectURL(file), 'video');
+                } else {
+                    appendMessage('user', query + ` (File: ${file.name})`);
+                }
+            } else {
+                appendMessage('user', query);
+            }
+
+            document.getElementById('query').value = '';
+            imageFileInput.value = '';
+            documentFileInput.value = '';
+            videoFileInput.value = '';
+
+            // Show loading indicator
+            showLoadingIndicator();
+
+            fetch('/api/chat', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let botMessageDiv = appendMessage('bot', '');
+                let isFirstChunk = true;
+
+                function read() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            hideLoadingIndicator();
+                            return;
+                        }
+                        const chunk = decoder.decode(value, { stream: true });
+                        if (isFirstChunk) {
+                            hideLoadingIndicator();
+                            isFirstChunk = false;
+                        }
+                        botMessageDiv.textContent += chunk;
+                        document.querySelector('.chat-history').scrollTop = document.querySelector('.chat-history').scrollHeight;
+                        read();
+                    }).catch(error => {
+                        hideLoadingIndicator();
+                        botMessageDiv.textContent += '\nError: ' + error.message;
+                    });
+                }
+                read();
+            })
+            .catch(error => {
+                hideLoadingIndicator();
+                appendMessage('bot', 'Error: ' + error.message);
+            });
+        }
+
+        function appendMessage(sender, text, fileUrl = null, fileType = 'image') {
+            const chatHistory = document.querySelector('.chat-history');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + (sender === 'user' ? 'user-message' : 'bot-message');
+
+            if (fileUrl) {
+                if (fileType === 'image') {
+                    const img = document.createElement('img');
+                    img.src = fileUrl;
+                    messageDiv.appendChild(img);
+                } else if (fileType === 'video') {
+                    const video = document.createElement('video');
+                    video.src = fileUrl;
+                    video.controls = true;
+                    messageDiv.appendChild(video);
+                }
+            }
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.textContent = text;
+            messageDiv.appendChild(textDiv);
+
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            return messageDiv;
+        }
+    </script>
+</body>
+</html>
